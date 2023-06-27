@@ -1,0 +1,1324 @@
+API:
+API stands for Application Programming Interface.
+API is a communication protocol between client-side or front end and server-side or back end.
+It enables client-side and server-side to communicate with each other.
+It is an intermediate layer between front end and back end.
+-------------------------------------------------------------------------------------------------------------------
+API testing:
+API testing is a type of software testing that analyzes an application program interface (API) to verify that it
+   fulfills its expected functionality, security, performance and reliability.
+The tests are performed either directly on the API or as part of integration testing.
+------------------------------------------------------------------------------------------------------------------
+How API works?
+User enters all the information required on the front end.
+front-end captures this data and sends it to API over http protocol which is independent of any language.
+The format of sending the data could be either Json or XML format(Both are independent of any language).
+   These are representation of data(not language).
+API send this details to the back-end.
+back-end process the data and sends back to the API which sends this information to the front-end.
+------------------------------------------------------------------------------------------------------------------
+Rest Assured:
+Rest Assured is a java based library that is used to test RESTful web services/APIs and integrates well with
+   Maven.
+It has very efficient matching techniques, so asserting your expected results is also pretty straight forward.
+Rest Assured has methods to fetch data from almost every part of the request and response no matter how complex
+   the JSON structures are.
+------------------------------------------------------------------------------------------------------------------
+Requirements for API testing:
+These requirements are called API contracts.
+End point: Address where API is hosted on the Server.
+
+CRUD operations:
+HTTP methods:
+HTTP methods are used to communicate with Rest APIs.
+1. GET:
+The GET method is used to extract information from the given server using a given URI.
+Using GET request we should only extract data and should have no other effect on the data.
+No Payload/Body is required
+We can send input data using Query Parameters
+2. POST-
+A POST request is used to send data to the server, for example, customer information, file upload, etc. using
+   HTML forms.
+We can send input data using request body/Payload.
+3. PUT- Replaces all current representations of the target resource with the uploaded content.
+4. DELETE- Removes all current representations of the target resource given by a URI.
+
+Resources:
+Resources represent API/Collection which can be accessed from the Server.
+   Example: Google.com/maps, google.com/search, google.com/images
+In the above examples google.com is BASE URI and maps, search, images are resources.
+
+Path Parameters:
+Path parameters are variable parts of a URL path.
+They are typically used to point to a specific resource within a collection, such as a user identified by ID
+   Example:
+   https://www.google.com/Images/1123343
+   https://www.google.com/docs/1123343
+   https://amazon.com/orders/112
+
+Query Parameters:
+Query Parameter is used to sort/filter the resources.
+Query Parameters are identified with '?'.
+   Example: https://amazon.com/orders?sort_by=2/20/2020
+
+Headers/Cookies:
+Headers represent the meta-data associated with the API request and response.
+In layman terms, we were sending Additional details to API to process our request.
+   Example : Authorization details
+
+End Point Request URL can be constructed as below
+Base URL/resource/(Query/Path)Parameters.
+------------------------------------------------------------------------------------------------------------------
+Basic API testing using RestAssured:
+Three methods are used here:
+1. given() - giving all the input details here
+2. when() - to submit API - http method and resource are given here
+3. then() - all the assertions are written here.
+
+To add a place in google maps:
+   Example:
+   public class AddPlace {
+      public static void main(String[] args) {
+         RestAssured.baseURI = "https://rahulshettyacademy.com";
+         given().log().all().queryParam("key", "qaclick123").header("Content-Type","application/json")
+            .body(PayloadForAddPlace.addPlace()).when().post("/maps/api/place/add/json")
+            .then().log().all().assertThat().statusCode(200);
+      }
+   }
+   Separate class for request body:
+   public class PayloadForAddPlace {
+      public static String addPlace() {
+         return "{\n" +
+            "  \"location\": {\n" +
+            "    \"lat\": -38.383494,\n" +
+            "    \"lng\": 33.427362\n" +
+            "  },\n" +
+            "  \"accuracy\": 50,\n" +
+            "  \"name\": \"Frontline house\",\n" +
+            "  \"phone_number\": \"(+91) 983 893 3937\",\n" +
+            "  \"address\": \"29, side layout, cohen 09\",\n" +
+            "  \"types\": [\n" +
+            "    \"shoe park\",\n" +
+            "    \"shop\"\n" +
+            "  ],\n" +
+            "  \"website\": \"http://google.com\",\n" +
+            "  \"language\": \"French-IN\"\n" +
+            "}\n";
+      }
+   }
+
+Assertion on json response body using Hamcrest:
+   Example:
+   public class AssertionOnJsonResponseBody {
+      public static void main(String[] args) {
+          RestAssured.baseURI = "https://rahulshettyacademy.com";
+          given().log().all().queryParam("key", "qaclick123").header("Content-Type","application/json")
+             .body(PayloadForAddPlace.addPlace()).when().post("/maps/api/place/add/json")
+             .then().log().all().assertThat().statusCode(200).body("scope" ,equalTo("APP"));
+      }
+   }
+
+Extracting response as String:
+   Example:
+   public class ExtractJsonResponse {
+      public static void main(String[] args) {
+          RestAssured.baseURI = "https://rahulshettyacademy.com";
+          String response = given().log().all().queryParam("key", "qaclick123").header("Content-Type","application/json")
+             .body(PayloadForAddPlace.addPlace()).when().post("/maps/api/place/add/json")
+             .then().assertThat().statusCode(200).body("scope" ,equalTo("APP"))
+             .extract().response().asString();
+          System.out.println(response);
+      }
+   }
+
+Parsing Json response body using JsonPath class:
+   Example:
+   public class ParsingJsonResponseUsingJsonPathClass {
+      public static void main(String[] args) {
+         RestAssured.baseURI = "https://rahulshettyacademy.com";
+         String response = given().log().all().queryParam("key", "qaclick123").header("Content-Type","application/json")
+            .body(PayloadForAddPlace.addPlace()).when().post("/maps/api/place/add/json")
+            .then().assertThat().statusCode(200).body("scope" ,equalTo("APP"))
+            .extract().response().asString();
+         System.out.println(response);
+         //Takes String and convert it into json
+         //Parsing json
+         JsonPath js = new JsonPath(response);
+         String placeId = js.getString("place_id");
+         System.out.println(placeId);
+      }
+   }
+
+To add a place, update its address and then get that place.
+   Example:
+   public class AddUpdateAndGetPlace {
+      public static void main(String[] args) {
+         RestAssured.baseURI = "https://rahulshettyacademy.com";
+         //Add Place
+         String response = given().log().all().queryParam("key", "qaclick123").header("Content-Type","application/json")
+            .body(PayloadForAddPlace.addPlace()).when().post("/maps/api/place/add/json")
+            .then().assertThat().statusCode(200).body("scope" ,equalTo("APP"))
+            .extract().response().asString();
+         System.out.println("Place added successfully");
+         System.out.println(response);
+         //Takes String and convert it into json
+         //Parsing json
+         JsonPath js = ReusableMethods.rawToJson(response);
+         String placeId = js.getString("place_id");
+         System.out.println(placeId);
+
+         //Update place
+         String newAddress = "Summer Walk, South Africa";
+         given().log().all().queryParam("key", "qaclick123").header("Content-Type", "application/json")
+            .body("{\n" +
+               "\"place_id\":\""+placeId+"\",\n" +
+               "\"address\":\""+newAddress+"\",\n" +
+               "\"key\":\"qaclick123\"\n" +
+               "}\n")
+            .when().put("/maps/api/place/update/json")
+            .then().log().all().assertThat().statusCode(200);
+         System.out.println("Address updated successfully");
+
+         //Get Place
+         String getPlaceResponse = given().log().all().queryParam("key", "qaclick123").queryParam("place_id", placeId)
+            .when().get("/maps/api/place/get/json").then().log().all().statusCode(200).extract()
+            .response().asString();
+         System.out.println("Place got successfully");
+         JsonPath js1 = ReusableMethods.rawToJson(getPlaceResponse);
+         String actualAddress = js1.getString("address");
+         System.out.println(actualAddress);
+         Assert.assertEquals(actualAddress, newAddress);
+      }
+   }
+   ReusableMethods class:
+   public class ReusableMethods {
+      public static JsonPath rawToJson(String response) {
+         JsonPath js = new JsonPath(response);
+         return js;
+      }
+   }
+-----------------------------------------------------------------------------------------------------------------
+Parsing complex Json:
+Mock response:
+It is a dummy response having the same structure like the original response.
+We are not getting this response from any API as API is still under development.
+So we don't have the URL.
+For this we use JsonPath class.
+   JsonPath js = new JsonPath(mockResponse);
+   Example:
+   {
+   "dashboard": {
+   "purchaseAmount": 1162,
+   "website": "rahulshettyacademy.com"
+   },
+   "courses": [
+   {
+      "title": "Selenium Python",
+      "price": 50,
+      "copies": 6
+   },
+   {
+      "title": "Cypress",
+      "price": 40,
+      "copies": 4
+   },
+   {
+      "title": "RPA",
+      "price": 45,
+      "copies": 10
+   },
+   {
+      "title": "Appium",
+      "price": 36,
+      "copies": 7
+   }
+   ]
+   }
+   Example 1:
+   public class ParsingComplexJson {
+      public static void main(String[] args) {
+         JsonPath js = new JsonPath(Payload.courseDetails());
+         //1. Print the number of courses.
+         int courseCount = js.getInt("courses.size()");
+         System.out.println(courseCount);//size() is applied only on arrays.
+         //2. Print purchase amount.
+         int totalAmount = js.getInt("dashboard.purchaseAmount");
+         System.out.println(totalAmount);
+         //3. Print title of the first course.
+         //For String getString() is available but get() by default pull String value.
+         String firstCourseTitle = js.get("courses[0].title");
+         System.out.println(firstCourseTitle);
+         //4. Print all course titles and their respective prices.
+         for(int i=0; i<courseCount; i++) {
+            String courseTitle = js.get("courses["+i+"].title");
+            int coursePrice = js.getInt("courses["+i+"].price");
+            System.out.println(courseTitle + "- " + coursePrice);
+         }
+         //5. Print number of copies sold by RPA course.
+         for(int i=0; i<courseCount; i++) {
+            String courseTitle = js.get("courses["+i+"].title");
+            if(courseTitle.equals("RPA")) {
+               int copiesCount = js.getInt("courses["+i+"].copies");
+               System.out.println(copiesCount);
+               break;
+            }
+         }
+      }
+   }
+   Example 2:
+   public class SumValidation {
+      @Test
+      public void sumValidation() {
+         //6. Verify if sum of all course prices matches with purchase amount.
+         JsonPath js = new JsonPath(Payload.courseDetails());
+         int expectedPurchaseAmount = js.getInt("dashboard.purchaseAmount");
+         int courseCount = js.getInt("courses.size()");
+         int actualPurchaseAmount = 0;
+         for(int i=0; i<courseCount; i++) {
+            int coursePrice = js.getInt("courses["+i+"].price");
+            int copiesSold = js.getInt("courses["+i+"].copies");
+            actualPurchaseAmount = actualPurchaseAmount + (coursePrice * copiesSold);
+         }
+         Assert.assertEquals(actualPurchaseAmount, expectedPurchaseAmount, "Amount is matched");
+      }
+   }
+------------------------------------------------------------------------------------------------------------------
+Advanced Payload Creation Strategies:
+   Library API :
+   BaseURI : http://216.10.245.166
+   1. Resource : Library/Addbook.php
+   Method : POST
+   Input Payload : Json:
+   {
+      "name":"Learn Appium Automation with Java",
+      "isbn":"bcd",
+      "aisle":"227",
+      "author":"John foe"
+   }
+   Output Json
+   {
+      "Msg": "successfully added",
+      "ID": "bcd227"
+   }
+
+   2. Resource : /Library/GetBook.php?AuthorName=somename
+   Method : GET
+   Output Json :
+   Output the array of Json object books with all below  details
+   {
+      Name : “bookname”   ( String)
+      Isbn :  “A2fdsf”   (String)
+      Aisle : 32 (Integer)
+   }
+
+   3. Resource : Library/GetBook.php?ID=3389
+   Method : GET
+   Output Json :
+   {
+      "book_name": "Selenium automation using Java",
+      "isbn": "a23hd738",
+      "aisle": "1223"
+   }
+
+   4. Resource :/Library/DeleteBook.php
+   Method : POST
+   Input Payload : Json:
+   {
+      "ID" : "a23h345122332"
+   }
+   Output Response :
+   {
+      msg : book is successfully deleted”
+
+   }
+
+Dynamically build json payload with external data inputs:
+   public class Payload {
+      public static String addBook() {
+         String payload = " {\n" +
+            "      \"name\":\"Learn Appium Automation with Java\",\n" +
+            "      \"isbn\":\"bce\",\n" +
+            "      \"aisle\":\"224\",\n" +
+            "      \"author\":\"John foe\"\n" +
+            "   }";
+         return payload;
+      }
+   }
+   public class AddBook {
+      @Test
+      public void addBook() {
+         RestAssured.baseURI = "http://216.10.245.166";
+         String response = given().log().all().header("Content-Type", "application/json").body(Payload.addBook())
+            .when().post("Library/Addbook.php")
+            .then().log().all().assertThat().statusCode(200).extract().response().asString();
+         JsonPath js = ReusableMethods.rawToJson(response);
+         String id = js.get("ID");
+         System.out.println(id);
+      }
+   }
+If we execute above test again it will be failed.
+It is because the book having the above aisle and isbn are already added.
+To solve this we have to provide addBook() of Payload class with two arguments aisle and isbn and passing the
+   value of aisle and isbn in AddBook class while invoking addBook().
+It will dynamically change the value of isbn and aisle in the payload.
+   Solution:
+   public class Payload() {
+      public static String addBook(String isbn, String aisle) {
+         String payload = " {\n" +
+            "      \"name\":\"Learn Appium Automation with Java\",\n" +
+            "      \"isbn\":\""+isbn+"\",\n" +
+            "      \"aisle\":\""+aisle+"\",\n" +
+            "      \"author\":\"John foe\"\n" +
+            "   }";
+            return payload;
+      }
+   }
+   public class AddBook {
+      @Test
+      public void addBook() {
+         RestAssured.baseURI = "http://216.10.245.166";
+         String response = given().log().all().header("Content-Type", "application/json")
+            .body(Payload.addBook("pag", "264"))
+            .when().post("Library/Addbook.php")
+            .then().log().all().assertThat().statusCode(200).extract().response().asString();
+         JsonPath js = ReusableMethods.rawToJson(response);
+         String id = js.get("ID");
+         System.out.println(id);
+      }
+   }
+
+Parameterize the API tests with multiple data sets using TestNG DataProvider:
+   public class AddBookUsingDataProvider {
+      @DataProvider
+      public Object[][] addBookData() {
+         Object[][] data = new Object[][]{
+            {"hdj", "369"},
+            {"dbi", "370"},
+            {"sjo", "479"}
+         };
+         return data;
+      }
+      @Test(dataProvider = "addBookData")
+      public void addBook(String isbn, String aisle) {
+         RestAssured.baseURI = "http://216.10.245.166";
+         String response = given().log().all().header("Content-Type", "application/json")
+            .body(Payload.addBook(isbn, aisle))
+            .when().post("Library/Addbook.php")
+            .then().log().all().assertThat().statusCode(200).extract().response().asString();
+      }
+   }
+
+How to send static json files(payload) directly into Post method of Rest Assured:
+Most of the time Json payloads are static.
+So either we can send payload inside body method or can store it into a separate class and pull the value of
+   payload from there.
+We can also send the payload from some external file.
+For this we have to convert the content of the .json file into byte and then convert it into String as body method
+   accept String value.
+   Example:
+   .body(new String(Files.readAllBytes(Paths.get(path of the file)))).
+   public class PayloadFromExternalFile {
+      @Test
+      public void addPlace() throws IOException {
+         RestAssured.baseURI = "https://rahulshettyacademy.com";
+         given().log().all().queryParam("key", "qaclick123").header("Content-Type", "application/json")
+            .body(new String(Files.readAllBytes(Paths.get("C:\\Users\\Ishani\\Desktop\\jsonvalidator.json"))))
+            .when().post("/maps/api/place/add/json")
+            .then().log().all().assertThat().statusCode(200);
+      }
+   }
+
+Feed json payload from Excel using HashMap:
+------------------------------------------------------------------------------------------------------------------
+JIRA:
+It is a project management tool to track the progress of the projects.
+
+Cookie Base Authentication:
+This is how cookie-based authentication works in Jira at a high level:
+1. The client creates a new session for the user via the Jira REST API.
+   Base URI: http://localhost:8080
+   resource: /rest/auth/1/session
+   header: Content-Type- application/json
+   request body: { "username": "userName", "password": "Password" }
+2. Jira returns a session object that has information about the session including the session cookie.
+   The client stores this session object.
+   {
+      "session": {
+         "name": "JSESSIONID",
+         "value": "2B3454B5461B6F74C882E3D9F5129FC8"
+      },
+      "loginInfo": {
+         "loginCount": 9,
+         "previousLoginTime": "2023-06-09T11:52:23.704+0530"
+      }
+   }
+3. The client can now set the cookie in the header for all subsequent requests to the Jira REST API.
+   header:
+   Cookie- JSESSIONID=2B3454B5461B6F74C882E3D9F5129FC8
+
+Request body to add an Issue:
+   {
+      "fields": {
+         "project": {
+            "key": "RSA"
+         },
+         "summary": "Credit card defect",
+         "description": "Creating my first bug",
+         "issuetype": {
+            "name": "Bug"
+         }
+      }
+   }
+
+Steps to automate in Jira application
+   1. Login to Jira to create session using Login API.
+   2. Add an Issue in existing project.
+   public class JiraTest {
+      /*Steps to automate in Jira application:
+      1. Login to Jira to create session using Login API.
+      2. Add an Issue.
+      */
+      public static void main(String[] args) {
+         RestAssured.baseURI = "http://localhost:8080";
+         //1. Login Scenario
+         SessionFilter session = new SessionFilter();
+         String response = given().log().all().headers("Content-Type", "application/json")
+            .body("{ \"username\": \"anshu.dubey4\", \"password\": \"Incredible@9\" }")
+            .filter(session).when().post("/rest/auth/1/session").then().log().all()
+            .extract().response().asString();
+         //2. Adding Issue
+         given().log().all().headers("Content-Type", "application/json")
+            .filter(session).body("{\n" +
+            "            \"fields\": {\n" +
+            "            \"project\": {\n" +
+            "                \"key\": \"RES\"\n" +
+            "            },\n" +
+            "            \"summary\": \"Debit card defect\",\n" +
+            "                    \"description\": \"Creating my first bug\",\n" +
+            "                    \"issuetype\": {\n" +
+            "                \"name\": \"Bug\"\n" +
+            "            }\n" +
+            "        }\n" +
+            "        }\n")
+            .when().post(" /rest/api/2/issue").then().assertThat().statusCode(201);
+      }
+   }
+In resources where we see {issueId}, that means this is a path parameter.
+Every time a session is created a session id is generated and we have to pass that session id as header in other
+   APIs.
+There are two ways to extract the session id from the Login API response:
+   1. Using JsonPath class and passing the response into the JsonPath class object as argument.
+      By using its reference variable we can extract the session id.
+      Example:
+      JsonPath js = new JsonPath(response);
+      String sessionId = js.get("session.value");
+   2. Using SessionFilter class- we create an object for SessionFilter class.
+      We pass the session variable into the filter method as argument.
+      Everytime a new session is created session variable remembers the response.
+      Example:
+      SessionFilter session = new SessionFilter();
+      given().log().all().header("Name", "value").body("request body").filter(session).
+
+curl comment:
+curl -D- -u admin:admin -X POST -H "X-Atlassian-Token: no-check" -F "file=@myfile.txt" http://myhost/rest/api/2/issue/TEST-123/attachments
+To submit the API we have to understand the curl comment:
+D stands for different types of parameters what we are passing.
+   In our case it is userName and password(admin:admin)
+X stands for http method(post here).
+H stands for header, which means for using this API we have to use this header and its value.
+F stands for file.
+
+For adding attachment/file:
+For this we use multiPart("file", new File("Path of the file")).
+If we use multiPart() then we have to add header("Content-Type", "multipart/form-data").
+
+Steps to automate in Jira application:
+   1. Login to Jira to create session using Login API.
+   2. Add an Issue in existing project
+   3. Add a comment to existing Issue using Add Comment API.
+   4. Add an attachment to existing Issue using Add Attachment API.
+   public class JiraTest2 {
+      public static void main(String[] args) {
+         RestAssured.baseURI = "http://localhost:8080";
+         //1. Login Scenario
+         SessionFilter session = new SessionFilter();
+         String response = given().log().all().headers("Content-Type", "application/json")
+            .body("{ \"username\": \"anshu.dubey4\", \"password\": \"Incredible@9\" }")
+            .filter(session).when().post("/rest/auth/1/session").then().log().all()
+            .extract().response().asString();
+         //2. Adding an Issue
+         String addIssueResponse = given().log().all().headers("Content-Type", "application/json")
+            .filter(session).body("{\n" +
+            "            \"fields\": {\n" +
+            "            \"project\": {\n" +
+            "                \"key\": \"RES\"\n" +
+            "            },\n" +
+            "            \"summary\": \"Visa card defect\",\n" +
+            "                    \"description\": \"Creating my third bug\",\n" +
+            "                    \"issuetype\": {\n" +
+            "                \"name\": \"Bug\"\n" +
+            "            }\n" +
+            "        }\n" +
+            "        }\n")
+            .when().post(" /rest/api/2/issue").then().assertThat().statusCode(201).extract().response().asString();
+         //3. Adding a comment.
+         JsonPath js = new JsonPath(addIssueResponse);
+         String issueKey = js.get("key");
+         System.out.println(issueKey);
+         given().log().all().pathParam("key", issueKey).headers("Content-Type", "application/json")
+            .body("{\n" +
+            "    \"body\": \"This is my first comment.\",\n" +
+            "    \"visibility\": {\n" +
+            "        \"type\": \"role\",\n" +
+            "        \"value\": \"Administrators\"\n" +
+            "    }\n" +
+            "}").filter(session).when().post("/rest/api/2/issue/{key}/comment")
+            .then().assertThat().statusCode(201);
+         //4. Adding an attachment/file.
+         given().log().all().headers("X-Atlassian-Token", "no-check").pathParam("key", issueKey)
+            .header("Content-Type", "multipart/form-data").filter(session)
+            .multiPart("file", new File("C:\\Users\\ishan\\OneDrive\\Desktop\\" +
+            "Shubhanshu\\eclipse-workspace\\RestAssured\\jira.txt")).when()
+            .post("/rest/api/2/issue/{key}/attachments").then().log().all().assertThat().statusCode(200);
+      }
+   }
+
+Steps to automate in Jira application:
+   1. Login to Jira to create session using Login API.
+   2. Add an Issue in existing project
+   3. Add a comment to existing Issue using Add Comment API.
+   4. Get Issue details and verify if added comment and attachment exists using Get Issue API.
+   public class JiraTest3 {
+      public static void main(String[] args) {
+         RestAssured.baseURI = "http://localhost:8080";
+         //Login Scenario
+         SessionFilter session = new SessionFilter();
+         String response = given().log().all().headers("Content-Type", "application/json")
+            .body("{ \"username\": \"anshu.dubey4\", \"password\": \"Incredible@9\" }")
+            .filter(session).when().post("/rest/auth/1/session").then().log().all()
+            .extract().response().asString();
+         //Adding response
+         String addIssueResponse = given().log().all().headers("Content-Type", "application/json")
+            .filter(session).body("{\n" +
+            "            \"fields\": {\n" +
+            "            \"project\": {\n" +
+            "                \"key\": \"RES\"\n" +
+            "            },\n" +
+            "            \"summary\": \"Visa card defect\",\n" +
+            "                    \"description\": \"Creating my third bug\",\n" +
+            "                    \"issuetype\": {\n" +
+            "                \"name\": \"Bug\"\n" +
+            "            }\n" +
+            "        }\n" +
+            "        }\n")
+            .when().post(" /rest/api/2/issue").then().assertThat().statusCode(201).extract().response().asString();
+         //Adding a comment
+         JsonPath js = new JsonPath(addIssueResponse);
+         String issueKey = js.get("key");
+         System.out.println(issueKey);
+         given().log().all().pathParam("key", issueKey).headers("Content-Type", "application/json")
+            .body("{\n" +
+            "    \"body\": \"This is my first comment.\",\n" +
+            "    \"visibility\": {\n" +
+            "        \"type\": \"role\",\n" +
+            "        \"value\": \"Administrators\"\n" +
+            "    }\n" +
+            "}").filter(session).when().post("/rest/api/2/issue/{key}/comment")
+            .then().assertThat().statusCode(201);
+         //Getting Issue details and verifying it.
+         String getResponse = given().log().all().pathParam("key", issueKey)
+            .queryParam("fields", "comment").filter(session)
+            .when().get("/rest/api/2/issue/{key}").then().log().all()
+            .extract().response().asString();
+         JsonPath js1 = new JsonPath(getResponse);
+         String comment = js1.get("fields.comment.comments[0].body");
+         System.out.println(comment);
+      }
+   }
+
+We already knew that query parameters are used to sort/filter.
+We can use path and query parameters both in a single test(in the above example).
+We can filter the response using query parameters(as given in the contract).
+We can handle HTTPS Certification Validation through automated code by using relaxedHTTPSValidation() method.
+   We are not required to use this method because we are working on local server(Needed in real time projects).
+------------------------------------------------------------------------------------------------------------------
+OAuth 2.0 Authentication:
+Third type of authentication.
+OAuth 2.0 is the industry-standard protocol for authorization.
+OAuth 2.0 comes with multiple grant types and most commonly used grant types are Authorization code and Client
+   credentials.
+
+Why applications rely on other(Google or Facebook) Authentication:
+No data breach headaches for application.
+Need not to maintain user profile data.
+This also allows richer websites by allowing different applications to talk to each other.
+
+Back-end architecture in OAuth 2.0 Authentication:
+Client         ClientID         ClientSecretId         Resource Owner         Resource/Authorization Server
+BookMyShow     ID that          BookMyShow             User                   Google/Facebook/Other
+               identifies       registers this
+               the client       with Google
+Client has to register their application into the google server to give permission to host google authentication
+   in their application.
+After approving google wil assign one client id and one client secret id to the client.
+Client id is the one by which client can be uniquely identified in the google server.
+Client secret id is like password.
+
+Steps:
+User sign into Google by hitting google Authorization server and get code.
+Application/client will use this code to hit google resource server in back end to get Access Token(also scope).
+Access Token will be sent to client which will be stored in the browser.
+After sign in user will redirect to the client and Access Token will be stored in browser cookie.
+Application grants access to user by validating access token.
+If Access Token is expired(cookies deleted) application will again ask user to sign in with google.
+
+Different key parameters:
+scope:
+scope is the details of user application need from the google server.
+auth_url:
+google authorization server.
+client_id:
+response_type:
+what you need from the server(code).
+redirect_url:
+application url.
+state:
+optional parameter(for security purpose).
+
+OAuth 2.0 Contract Details:
+Grant type = Authorization code
+redirect URL/Callback URL = https://rahulshettyacademy.com/getCourse.php
+Authorization server url = https://accounts.google.com/o/oauth2/v2/auth
+Access token url = https://www.googleapis.com/oauth2/v4/token
+Client ID = 692183103107-p0m7ent2hk7suguv4vq22hjcfhcr43pj.apps.googleusercontent.com
+Client Secret = erZOWM9g3UtwNRj340YYaK_W
+Scope = https://www.googleapis.com/auth/userinfo.email
+State = Any random String
+How to pass oauth in request = Headers
+
+Mandatory fields for GetAuthorization Code Request:
+End Point : Authorization server url
+Query Params:Scope, Auth_url, client_id, response_type, redirect_uri
+This operation should be performed in the browser to get the authorization code(which is basically an url).
+output : Code
+
+Mandatory fields for GetAccessToken Request :
+End point : Access token url
+Query Params :Code, client_id, 	client_secret, redirect_uri, grant_type
+Output : Access token
+
+Example:
+   package com.OAuthAuthentication;
+   public class OAuthTest {
+      public static void main(String[] args) throws InterruptedException {
+         //To get the authorization code
+         //WebDriverManager.chromedriver().setup();
+         //WebDriver driver = new ChromeDriver();
+         //driver.manage().window().maximize();
+         //driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
+         //driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+         //driver.get("https://accounts.google.com/o/oauth2/v2/auth?scope=https://" +
+         //"www.googleapis.com/auth/userinfo.email&" +
+         //"auth_url=https://accounts.google.com/o/oauth2/v2/auth&client_id=692183103107-p0m7ent2hk7suguv4vq22h" +
+         //"jcfhcr43pj.apps.googleusercontent.com&response_type=code&" +
+         //"redirect_uri=https://rahulshettyacademy.com/getCourse.php&state=verifyfjdss");
+         //driver.findElement(By.xpath("//input[@id='identifierId']")).sendKeys("anshu.dubey4@gmail.com");
+         //driver.findElement(By.xpath("//button[@jscontroller='soHxf']//span[text()='Next']")).click();
+         //driver.findElement(By.xpath("//input[@type='password']")).sendKeys("*******");
+         //driver.findElement(By.xpath("//button[@jscontroller='soHxf']//span[text()='Next']")).click();
+         //Thread.sleep(5000);
+         //String url = driver.getCurrentUrl();
+         //Since Google has disabled gmail login through automation
+         String url = "https://rahulshettyacademy.com/getCourse.php?state=verifyfjdss" +
+            "&code=4%2F0AbUR2VOw2mkbxmkFGN3RB-70oumAJFnfs1XdxBGmPSrrq1NJdw4w9qiKWOiMQEp-SCm34A" +
+            "&scope=email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=1&prompt=consent";
+         String partialCode = url.split("code=")[1];
+         String code = partialCode.split("&scope")[0];
+         System.out.println(code);
+
+         //To get the access token
+         /*urlEncodingEnabled() is used to explicitly tell to RestAssured not to perform any encoding for
+         special characters.*/
+         String accessTokenResponse = given().urlEncodingEnabled(false).queryParam("code", code)
+            .queryParam("client_id", "692183103107-p0m7ent2hk7suguv4vq22hjcfhcr43pj.a" +
+            "pps.googleusercontent.com")
+            .queryParam("client_secret", "erZOWM9g3UtwNRj340YYaK_W")
+            .queryParam("grant_type", "authorization_code")
+            .queryParam("redirect_uri", "https://rahulshettyacademy.com/getCourse.php")
+            .when().log().all().post("https://www.googleapis.com/oauth2/v4/token").asString();
+         JsonPath js = new JsonPath(accessTokenResponse);
+         String accessToken = js.getString("access_token");
+         System.out.println(accessToken);
+
+         String response = given().queryParam("access_token", accessToken)
+           .when().log().all().get("https://rahulshettyacademy.com/getCourse.php").asString();
+         System.out.println(response);
+       }
+   }
+
+Client credentials Grant type:
+This grant type is used when application requests for its own data.
+There is no user/human present between client and resource server.
+No code is required when grant type is client credentials.
+------------------------------------------------------------------------------------------------------------------
+Serialization and Deserialization of Request/Response with POJO classes:
+POJO(Plain Old Java Object) classes:
+The process of Serialization and Deserialization can be done using POJO classes.
+Standards of defining POJO classes:
+   1. Create a variable for every object in JSON file.
+   2. The variables should be private.
+   3. Create getter and setter methods for every variable.
+Serialization:
+In Rest Assured, this is a process of converting a java object into request body(Payload).
+   //POJO class
+   public class Greetings {
+      private String message;
+      private String greet;
+      public String getMessage() {
+         return message;
+      }
+      public void setMessage(String message) {
+         this.message = message;
+      }
+      public String getGreet() {
+         return greet;
+      }
+      public void setGreet(String greet) {
+         this.greet = greet;
+      }
+   }
+RestAssured automatically convert this POJO class into JSON file.
+   {
+      "message":"",
+      "greet":""
+   }
+After creating POJO class, we create object of the class to call the methods and using this we set the value in
+   JSON request body.
+   Greetings g = new Greetings();
+   g.setMessage("Hello");
+   g.setGreet("Hi");
+This object g we will send inside the body method.
+The JSON file wille be after using the setter method.
+   {
+      "message":"Hello",
+      "greet":"Hi"
+   }
+
+Deserialization:
+The process of converting response body back to java object.
+Assume this is a JSON response we got
+   {
+      "message":"Hello",
+      "greet":"Hi"
+   }
+We have to use getter methods this time to get the value from JSON response body.
+   Greetings g = new Greetings();
+   g.getMessage();
+   g.getGreet();
+
+Advantages:
+Easy to parse and extract response(Json/XML) values if they are wrapped as java object.
+User friendly methods can be created which makes code more readable.
+
+Additional libraries required:
+For json- Jackson, Jackson2, Gson or Johnzon.
+For XML- JAXB.
+
+Deserialization example:
+   POJO classes:
+   package com.pojoDeserialization;
+   public class GetCourse {
+      private String instructor;
+      private String url;
+      private String services;
+      private String expertise;
+      private Courses courses;
+      private String linkedIn;
+
+      public String getInstructor() {
+         return instructor;
+      }
+      public void setInstructor(String instructor) {
+         this.instructor = instructor;
+      }
+
+      public String getUrl() {
+         return url;
+      }
+      public void setUrl(String url) {
+         this.url = url;
+      }
+
+      public String getServices() {
+         return services;
+      }
+      public void setServices(String services) {
+         this.services = services;
+      }
+
+      public String getExpertise() {
+         return expertise;
+      }
+      public void setExpertise(String expertise) {
+         this.expertise = expertise;
+      }
+
+      public Courses getCourses() {
+         return courses;
+      }
+      public void setCourses(Courses courses) {
+         this.courses = courses;
+      }
+
+      public String getLinkedIn() {
+         return linkedIn;
+      }
+      public void setLinkedIn(String linkedIN) {
+         this.linkedIn = linkedIn;
+      }
+   }
+
+   package com.pojoDeserialization;
+   public class Courses {
+      private List<WebAutomation> webAutomation;
+      private List<Api> api;
+      private List<Mobile> mobile;
+
+      public List<WebAutomation> getWebAutomation() {
+         return webAutomation;
+      }
+      public void setWebAutomation(List<WebAutomation> webAutomation) {
+         this.webAutomation = webAutomation;
+      }
+
+      public List<Api> getApi() {
+         return api;
+      }
+      public void setApi(List<Api> api) {
+         this.api = api;
+      }
+
+      public List<Mobile> getMobile() {
+         return mobile;
+      }
+      public void setMobile(List<Mobile> mobile) {
+         this.mobile = mobile;
+      }
+   }
+
+   package com.pojoDeserialization;
+   public class WebAutomation {
+      private String courseTitle;
+      private String price;
+
+      public String getCourseTitle() {
+         return courseTitle;
+      }
+      public void setCourseTitle(String courseTitle) {
+         this.courseTitle = courseTitle;
+      }
+
+      public String getPrice() {
+         return price;
+      }
+      public void setPrice(String price) {
+         this.price = price;
+      }
+   }
+
+   package com.pojoDeserialization;
+   public class Api {
+      private String courseTitle;
+      private String price;
+
+      public String getCourseTitle() {
+         return courseTitle;
+      }
+      public void setCourseTitle(String courseTitle) {
+         this.courseTitle = courseTitle;
+      }
+
+      public String getPrice() {
+         return price;
+      }
+      public void setPrice(String price) {
+         this.price = price;
+      }
+   }
+
+   package com.pojoDeserialization;
+   public class Mobile {
+      private String courseTitle;
+      private String price;
+
+      public String getCourseTitle() {
+         return courseTitle;
+      }
+      public void setCourseTitle(String courseTitle) {
+         this.courseTitle = courseTitle;
+      }
+
+      public String getPrice() {
+         return price;
+      }
+      public void setPrice(String price) {
+         this.price = price;
+      }
+   }
+
+   package com.pojoDeserialization;
+   public class Deserialization {
+      public static void main(String[] args) {
+         //To get code
+         String url = "https://rahulshettyacademy.com/getCourse.php?state=verifyfjdss&code=4%2F0AbUR2VMtVfM6PoPKu" +
+            "xXYkrXFxuwVCkO2nrDhXjRYTR3VeUdvKUpa2s0UtA1Vb4RE7t4eOw&scope=email+https%3A%2F%2Fwww.googleapis." +
+            "com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=none";
+         String partialCode = url.split("code=")[1];
+         String code = partialCode.split("&scope")[0];
+
+         //To get the access token
+         /*urlEncodingEnabled() is used to explicitly tell to RestAssured not to perform any encoding for
+         special characters.*/
+         String accessTokenResponse = given().urlEncodingEnabled(false).queryParam("code", code)
+            .queryParam("client_id", "692183103107-p0m7ent2hk7suguv4vq22hjcfhcr43pj.a" +
+            "pps.googleusercontent.com")
+            .queryParam("client_secret", "erZOWM9g3UtwNRj340YYaK_W")
+            .queryParam("grant_type", "authorization_code")
+            .queryParam("redirect_uri", "https://rahulshettyacademy.com/getCourse.php")
+            .when().log().all().post("https://www.googleapis.com/oauth2/v4/token").asString();
+         JsonPath js = new JsonPath(accessTokenResponse);
+         String accessToken = js.getString("access_token");
+
+         GetCourse response = given().queryParam("access_token", accessToken).expect().defaultParser(Parser.JSON)
+            .when().get("https://rahulshettyacademy.com/getCourse.php").as(GetCourse.class);
+         System.out.println(response.getInstructor());
+         System.out.println(response.getLinkedIn());
+         //To get the price of SoapUI testing
+         List<Api> apiCourses = response.getCourses().getApi();
+         for(int i=0; i<apiCourses.size(); i++) {
+            if(apiCourses.get(i).getCourseTitle().equalsIgnoreCase("SoapUI Webservices testing")) {
+               apiCourses.get(i).getPrice();
+            }
+         }
+         //To the course names of WebAutomation
+         List<WebAutomation> webAutomationList = response.getCourses().getWebAutomation();
+         for(int i=0; i<webAutomationList.size(); i++) {
+            System.out.println(webAutomationList.get(i).getCourseTitle());
+         }
+       }
+   }
+
+Serialization example:
+   POJO classes:
+   package com.pojoSerialization;
+   public class AddPlace {
+      private int accuracy;
+      private String name;
+      private Location location;
+      private String phone_number;
+      private String address;
+      private List<String> types;
+      private  String website;
+      private String language;
+
+      public int getAccuracy() {
+         return accuracy;
+      }
+      public void setAccuracy(int accuracy) {
+         this.accuracy = accuracy;
+      }
+
+      public String getName() {
+         return name;
+      }
+      public void setName(String name) {
+         this.name = name;
+      }
+
+      public Location getLocation() {
+         return location;
+      }
+      public void setLocation(Location location) {
+         this.location = location;
+      }
+
+      public String getPhone_number() {
+         return phone_number;
+      }
+      public void setPhone_number(String phone_number) {
+         this.phone_number = phone_number;
+      }
+
+      public String getAddress() {
+         return address;
+      }
+      public void setAddress(String address) {
+         this.address = address;
+      }
+
+      public List<String> getTypes() {
+         return types;
+      }
+      public void setTypes(List<String> types) {
+         this.types = types;
+      }
+
+      public String getWebsite() {
+         return website;
+      }
+      public void setWebsite(String website) {
+         this.website = website;
+      }
+
+      public String getLanguage() {
+         return language;
+      }
+      public void setLanguage(String language) {
+         this.language = language;
+      }
+   }
+
+   package com.pojoSerialization;
+   public class Location {
+      private double lat;
+      private double lng;
+
+      public double getLat() {
+         return lat;
+      }
+      public void setLat(double lat) {
+         this.lat = lat;
+      }
+
+      public double getLng() {
+         return lng;
+      }
+      public void setLng(double lng) {
+         this.lng = lng;
+      }
+   }
+
+   package com.pojoSerialization;
+   public class Serialization {
+      public static void main(String[] args) {
+         RestAssured.baseURI = "https://rahulshettyacademy.com";
+         AddPlace addPlace = new AddPlace();
+         addPlace.setAccuracy(50);
+         addPlace.setAddress("29, side layout, cohen 09");
+         addPlace.setLanguage("French-IN");
+         addPlace.setName("Frontline house");
+         addPlace.setPhone_number("(+91) 983 893 3937");
+         addPlace.setWebsite("http://google.com");
+         List<String> typesList = new ArrayList<>();
+         typesList.add("shoe park");
+         typesList.add("shop");
+         addPlace.setTypes(typesList);
+         Location l = new Location();
+         l.setLat(-38.383494);
+         l.setLng(33.427362);
+         addPlace.setLocation(l);
+         String response = given().log().all().queryParam("key", "qaclick123").body(addPlace)
+            .when().post("/maps/api/place/add/json")
+            .then().log().all().assertThat().statusCode(200).extract().response().asString();
+      }
+   }
+-----------------------------------------------------------------------------------------------------------------
+Request and Response Spec Builders:
+They are used to write more generic codes.
+We use them to write the common code.
+The code will look more readable.
+Using RequestSpecBuilder class we build the request.
+Using RequestSpecBuilder class we build the response.
+   Example:
+   package com.pojoSerialization;
+   public class SpecBuilderTest {
+      public static void main(String[] args) {
+         AddPlace addPlace = new AddPlace();
+         addPlace.setAccuracy(50);
+         addPlace.setAddress("29, side layout, cohen 09");
+         addPlace.setLanguage("French-IN");
+         addPlace.setName("Frontline house");
+         addPlace.setPhone_number("(+91) 983 893 3937");
+         addPlace.setWebsite("http://google.com");
+         List<String> typesList = new ArrayList<>();
+         typesList.add("shoe park");
+         typesList.add("shop");
+         addPlace.setTypes(typesList);
+         Location l = new Location();
+         l.setLat(-38.383494);
+         l.setLng(33.427362);
+         addPlace.setLocation(l);
+
+         RequestSpecification req = new RequestSpecBuilder().setBaseUri("https://rahulshettyacademy.com")
+            .addQueryParam("key", "qaclick123")
+            .setContentType(ContentType.JSON).build();
+
+         ResponseSpecification res = new ResponseSpecBuilder().expectStatusCode(200)
+            .expectContentType(ContentType.JSON).build();
+
+         Response response = given().spec(req).body(addPlace)
+            .when().post("/maps/api/place/add/json")
+            .then().spec(res).assertThat().statusCode(200).extract().response();
+
+         String responseString = response.asString();
+         System.out.println(responseString);
+      }
+   }
+-----------------------------------------------------------------------------------------------------------------
+End to end Api test of an e-commerce website:
+If we want to attach file from local system content type will be only form-data.
+Id and Password:
+   anshu.practice@gmail.com
+   Practice@12345
+
+POJO classes:
+   package com.eComm;
+   public class LoginRequest {
+      private String userEmail;
+      private String userPassword;
+
+      public String getUserEmail() {
+         return userEmail;
+      }
+      public void setUserEmail(String userEmail) {
+         this.userEmail = userEmail;
+      }
+
+      public String getUserPassword() {
+         return userPassword;
+      }
+      public void setUserPassword(String userPassword) {
+         this.userPassword = userPassword;
+      }
+   }
+
+   package com.eComm;
+   public class LoginResponse {
+      private String token;
+      private String userId;
+      private String message;
+
+      public String getToken() {
+         return token;
+      }
+      public void setToken(String token) {
+         this.token = token;
+      }
+
+      public String getUserId() {
+         return userId;
+      }
+      public void setUserId(String userId) {
+         this.userId = userId;
+      }
+
+      public String getMessage() {
+         return message;
+      }
+      public void setMessage(String message) {
+         this.message = message;
+      }
+   }
+
+   package com.eComm;
+   public class Orders {
+      private List<OrderDetail> orders;
+
+      public List<OrderDetail> getOrders() {
+         return orders;
+      }
+      public void setOrders(List<OrderDetail> orders) {
+         this.orders = orders;
+      }
+   }
+
+   package com.eComm;
+   public class OrderDetail {
+      private String country;
+      private String productOrderedId;
+
+      public String getCountry() {
+         return country;
+      }
+      public void setCountry(String country) {
+         this.country = country;
+      }
+
+      public String getProductOrderedId() {
+         return productOrderedId;
+      }
+      public void setProductOrderedId(String productOrderedId) {
+         this.productOrderedId = productOrderedId;
+      }
+   }
+
+   package com.eComm;
+   public class ECommerceAPITest {
+      public static void main(String[] args) {
+         //1. Login
+         RequestSpecification reqLogin = new RequestSpecBuilder().setBaseUri("https://rahulshettyacademy.com")
+            .setContentType(ContentType.JSON).build();
+         LoginRequest loginRequest = new LoginRequest();
+         loginRequest.setUserEmail("anshu.practice@gmail.com");
+         loginRequest.setUserPassword("Practice@12345");
+
+         LoginResponse responseLogin = given().relaxedHTTPSValidation().log().all().spec(reqLogin).body(loginRequest).when()
+            .post("/api/ecom/auth/login").then().log().all().extract().response()
+            .as(LoginResponse.class);
+         String token = responseLogin.getToken();
+         String userId = responseLogin.getUserId();
+
+         //2.Create Product
+         RequestSpecification createProductBaseReq = new RequestSpecBuilder()
+            .setBaseUri("https://rahulshettyacademy.com").addHeader("authorization", token)
+            .build();
+
+         RequestSpecification reqCreateProduct = given().relaxedHTTPSValidation().log().all().spec(createProductBaseReq).param("productName", "Shirt")
+            .param("productAddedBy", userId).param("productCategory", "fashion")
+            .param("productSubCategory", "Shirts").param("productPrice", "4500")
+            .param("productDescription", "Levis").param("productFor", "Men")
+            .multiPart("ProductImage", new File("C:\\Users\\Ishani\\Downloads\\shirt.jpg"));
+
+         String responseCreateProduct = reqCreateProduct.when().post("/api/ecom/product/add-product")
+            .then().log().all().extract().response().asString();
+         JsonPath js = new JsonPath(responseCreateProduct);
+         String productId = js.getString("productId");
+
+         //3.Create Order
+         RequestSpecification createOrderBaseReq = new RequestSpecBuilder()
+            .addHeader("authorization", token)
+            .setBaseUri("https://rahulshettyacademy.com")
+            .setContentType(ContentType.JSON).build();
+
+         OrderDetail orderDetail = new OrderDetail();
+         orderDetail.setCountry("India");
+         orderDetail.setProductOrderedId(productId);
+
+         List<OrderDetail> orderDetailList = new ArrayList<>();
+         orderDetailList.add(orderDetail);
+
+         Orders orders = new Orders();
+         orders.setOrders(orderDetailList);
+
+         RequestSpecification createOrderReq = given().spec(createOrderBaseReq).body(orders);
+         String responseAddOrder = createOrderReq.when().post("/api/ecom/order/create-order")
+            .then().extract().response().asString();
+         System.out.println(responseAddOrder);
+
+         //4. Delete Order
+         RequestSpecification deleteProductBaseReq = new RequestSpecBuilder()
+            .addHeader("authorization", token)
+            .setBaseUri("https://rahulshettyacademy.com")
+            .setContentType(ContentType.JSON).build();
+
+         RequestSpecification deleteProductReq = given().log().all().spec(deleteProductBaseReq)
+            .pathParam("productId", productId);
+
+         String deleteProductResponse = deleteProductReq.when().delete("/api/ecom/product/delete-product/{productId}")
+            .then().log().all().extract().response().asString();
+
+         JsonPath js1 = new JsonPath(deleteProductResponse);
+         Assert.assertEquals("Product Deleted Successfully", js1.getString("message"));
+      }
+   }
+-----------------------------------------------------------------------------------------------------------------
